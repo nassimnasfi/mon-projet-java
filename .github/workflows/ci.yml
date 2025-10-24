@@ -1,0 +1,47 @@
+name: CI - Java Maven with PostgreSQL
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - feature/**
+  pull_request:
+
+jobs:
+  build-test:
+    name: "Build & Test"
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: gael
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: restservice
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U gael -d restservice"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: maven
+
+      - name: Build and run tests
+        env:
+          DATABASE_URL_TEST: postgres://gael:@localhost:5432/restservice
+        run: mvn clean verify
